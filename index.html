@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- Navbar: Movies / TV Shows tabs -->
+  <nav class="nav">
+    <div class="tabs">
+      <button class="tab active" data-mode="movie">Movies</button>
+      <button class="tab" data-mode="tv">TV Shows</button>
+    </div>
+  </nav>
+
+  <!-- Search bar + TV controls -->
+  <header class="top">
+    <form id="search-form" class="search" autocomplete="off">
+      <input id="search-input" type="search" placeholder="Search movies…" aria-label="Search" />
+      <ul id="results" class="results" hidden></ul>
+    </form>
+
+    <!-- Only visible in the TV Shows tab -->
+    <div id="tv-controls" class="tv-controls" hidden>
+      <select id="season-select" disabled>
+        <option value="">Season</option>
+      </select>
+      <select id="episode-select" disabled>
+        <option value="">Episode</option>
+      </select>
+      <button id="play-btn" class="play-btn" type="button" disabled>Play</button>
+    </div>
+  </header>
+
+  <!-- Video player (center) -->
+  <main class="stage">
+    <div class="player">
+      <iframe id="player" allow="autoplay; fullscreen; picture-in-picture"></iframe>
+      <p id="empty" class="empty">Search for something to play</p>
+    </div>
+    <p id="now-playing" class="now-playing"></p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

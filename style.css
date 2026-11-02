@@ -1,0 +1,248 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0b0b0c;
+  --surface: #161618;
+  --border: #2a2a2e;
+  --text: #ececec;
+  --muted: #7a7a80;
+  color-scheme: dark;        /* makes native dropdowns (select menus) dark too */
+}
+
+/* The "hidden" attribute must win even over display:flex rules below */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Navbar ---------- */
+.nav {
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 0;
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  background: var(--border);
+  color: var(--text);
+}
+
+/* ---------- Search ---------- */
+.top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px 24px;
+}
+
+.search {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+}
+
+.search input {
+  width: 100%;
+  padding: 12px 18px;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  outline: none;
+  transition: border-color .15s;
+}
+
+.search input:focus {
+  border-color: #55555c;
+}
+
+.search input::placeholder {
+  color: var(--muted);
+}
+
+.results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.results li {
+  display: flex;
+  /* poster on the left, text on the right */
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.results li:hover {
+  background: #222226;
+}
+
+.results img,
+.results .no-poster {
+  width: 40px;
+  height: 60px;
+  /* 2:3 ratio, the shape of a movie poster */
+  object-fit: cover;
+  border-radius: 4px;
+  background: #222;
+  flex-shrink: 0;
+  /* stop flexbox from squashing the poster */
+}
+
+.results strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.results span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.results li.info {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* ---------- TV controls (season / episode / play) ---------- */
+.tv-controls {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 560px;
+}
+
+.tv-controls select {
+  flex: 1;
+  min-width: 0;              /* lets long episode names shrink instead of overflowing */
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+.tv-controls select:focus {
+  border-color: #55555c;
+}
+
+.play-btn {
+  padding: 10px 20px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  background: var(--text);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.tv-controls select:disabled,
+.play-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* ---------- Player ---------- */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px 48px;
+}
+
+.player {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.player iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+  background: #000;
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.now-playing {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--muted);
+  min-height: 1.2em;
+}
