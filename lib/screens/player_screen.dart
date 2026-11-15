@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -39,6 +40,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   // both come back on any touch, like a video app's controls.
   bool _controls = true;
   Timer? _hideTimer;
+  Timer? _coverTimer; // lifts the loading cover if the page never says it is ready
 
   bool get _isShow => widget.item.type == MediaType.tv;
   int get _season => widget.season ?? 1;
@@ -62,15 +64,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     if (_isShow) _findNextEpisode();
     _showControls();
+    _startCoverTimer();
   }
 
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _coverTimer?.cancel();
     // Back to an upright app with its status bar
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
+  }
+
+  /// The page is on screen (or has had long enough): take the cover away.
+  void _pageReady() {
+    _coverTimer?.cancel();
+    if (mounted && _loading) setState(() => _loading = false);
+  }
+
+  /// Safety net: never leave the cover up for more than a few seconds.
+  void _startCoverTimer() {
+    _coverTimer?.cancel();
+    _coverTimer = Timer(const Duration(seconds: 6), _pageReady);
   }
 
   void _showControls() {
@@ -96,6 +112,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _loading = true;
       _failed = false;
     });
+    _startCoverTimer();
     _web?.loadUrl(urlRequest: URLRequest(url: WebUri(_url)));
   }
 
@@ -136,9 +153,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
         if (!action.isForMainFrame) return NavigationActionPolicy.ALLOW;
         return isPlayerHost(action.request.url?.host ?? '') ? NavigationActionPolicy.ALLOW : NavigationActionPolicy.CANCEL;
       },
-      onLoadStop: (_, _) {
-        if (mounted) setState(() => _loading = false);
+      // Android only (see "Layer 1" below): check each request as it is made
+      shouldInterceptRequest: _onAndroid ? (_, request) async => _blockedOrNull(request) : null,
+      // Lift the loading cover as soon as the page starts drawing. Waiting
+      // for the page to report "finished" is not safe: for some titles the
+      // player keeps a request open for good, so that moment never comes.
+      onPageCommitVisible: (_, _) => _pageReady(),
+      onProgressChanged: (_, progress) {
+        if (progress >= 70) _pageReady();
       },
+      onLoadStop: (_, _) => _pageReady(),
       onReceivedError: (_, request, _) {
         if (mounted && (request.isForMainFrame ?? false)) {
           setState(() {
@@ -189,7 +213,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
         width: hasMargin ? insets.left : 60,
         height: 60,
         child: AnimatedOpacity(
-          opacity: _controls ? 1 : 0.45,
+          // fainter when it sits in the empty margin, clearer when it is over the video
+          opacity: _controls ? 1 : (hasMargin ? 0.45 : 0.8),
           duration: fade,
           child: Center(
             child: GestureDetector(
@@ -199,7 +224,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 width: 44,
                 height: 44,
                 // no margin to sit in: give it a dark disc so it shows over the video
-                decoration: hasMargin ? null : const BoxDecoration(color: Color(0x99000000), shape: BoxShape.circle),
+                decoration: hasMargin ? null : const BoxDecoration(color: Color(0xCC000000), shape: BoxShape.circle),
                 child: const Icon(CupertinoIcons.back, color: Colors.white, size: 26),
               ),
             ),
@@ -242,12 +267,46 @@ class _PlayerScreenState extends State<PlayerScreen> {
 //  boxes and pop-ups over the video.
 //
 //  Three layers, the same ideas a blocking browser uses:
-//    1. Network: the wrapper page may not load scripts from other sites.
+//    1. Network: the wrapper page may not load things from other sites.
+//       iPhone: a WebKit content rule. Android: its web view has no such
+//       rule, so each request is checked by isWrapperAdRequest instead.
 //    2. Windows: pop-ups and new tabs are refused (see onCreateWindow).
 //    3. Page: anything in the wrapper besides the player frame is hidden.
 //
 //  The player frame itself is left alone, so playback is unaffected.
 // =========================================================
+
+final _onAndroid = defaultTargetPlatform == TargetPlatform.android;
+
+/// Layer 1 on Android. True for a request that should be blocked: something
+/// the wrapper page itself asks another site for, other than the player
+/// frame's page.
+///
+/// Who asked is read from the "Referer" header: requests made by the wrapper
+/// carry the provider's own site there, requests made inside the player
+/// frame carry the player's site and are left alone.
+bool isWrapperAdRequest({required Uri url, required bool mainFrame, required Map<String, String> headers}) {
+  if (mainFrame) return false; // the wrapper page itself
+  if (isPlayerHost(url.host)) return false; // the wrapper's own files
+
+  final lower = {for (final e in headers.entries) e.key.toLowerCase(): e.value};
+  final referer = Uri.tryParse(lower['referer'] ?? '');
+  if (referer == null || !isPlayerHost(referer.host)) return false; // asked for by the player frame, or unknown
+
+  // The one page the wrapper is allowed to load from elsewhere is the player frame
+  return !(lower['accept'] ?? '').contains('text/html');
+}
+
+/// An empty "403 Blocked" answer for a blocked request, or null to let it load.
+WebResourceResponse? _blockedOrNull(WebResourceRequest request) {
+  final block = isWrapperAdRequest(
+    url: request.url,
+    mainFrame: request.isForMainFrame ?? false,
+    headers: request.headers ?? const {},
+  );
+  if (!block) return null;
+  return WebResourceResponse(contentType: 'text/plain', statusCode: 403, reasonPhrase: 'Blocked', data: Uint8List(0));
+}
 
 final _playerHost = Uri.parse(apiBase).host;
 
@@ -273,8 +332,12 @@ InAppWebViewSettings playerWebSettings() {
     disallowOverScroll: true,
     supportZoom: false,
 
-    contentBlockers: [
-      // Layer 1. "TOP_FRAME" = requested by the wrapper page itself, not by
+    // Android: lets shouldInterceptRequest see every request
+    useShouldInterceptRequest: _onAndroid,
+
+    // iPhone only; the Android web view does not understand this rule
+    contentBlockers: _onAndroid ? [] : [
+      // Layer 1 (iPhone). "TOP_FRAME" = requested by the wrapper page itself, not by
       // the player frame inside it. "THIRD_PARTY" = from a different site.
       // The wrapper needs none of these; they are all ads and trackers.
       ContentBlocker(
@@ -299,6 +362,9 @@ final wrapperCleanupScript = UserScript(
   forMainFrameOnly: true,
   source: '''
 (function () {
+  // Only the wrapper page. Android injects this into every frame, and it
+  // must never touch the player frame's own content.
+  if (window.top !== window.self) return;
   var css =
     'html, body { margin: 0 !important; height: 100% !important; background: #000 !important; overflow: hidden !important; }' +
     'body > iframe:first-of-type { position: fixed !important; inset: 0 !important; width: 100% !important; height: 100% !important; border: 0 !important; }' +
