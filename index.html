@@ -1,52 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Player</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#141414">
+  <title>FakeFlix</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
 
+  <!-- "Add to Home Screen" on a phone opens FakeFlix full screen, like an app -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/app-icon-180.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="FakeFlix">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- The ?v= number makes browsers fetch a fresh copy instead of an old cached
+       one. Bump it (here and on script.js below) after changing any of them. -->
+  <link rel="stylesheet" href="style.css?v=7">
+  <!-- Phone layout: only loaded on narrow screens -->
+  <link rel="stylesheet" href="mobile.css?v=7" media="(max-width: 760px)">
+</head>
 <body>
 
-  <!-- Navbar: Movies / TV Shows tabs -->
-  <nav class="nav">
-    <div class="tabs">
-      <button class="tab active" data-mode="movie">Movies</button>
-      <button class="tab" data-mode="tv">TV Shows</button>
-    </div>
-  </nav>
+  <!-- Intro splash -->
+  <div id="splash" class="splash" aria-hidden="true">
+    <img src="assets/fakeflix-logo.png" alt="">
+  </div>
 
-  <!-- Search bar + TV controls -->
-  <header class="top">
-    <form id="search-form" class="search" autocomplete="off">
-      <input id="search-input" type="search" placeholder="Search movies…" aria-label="Search" />
-      <ul id="results" class="results" hidden></ul>
-    </form>
+  <!-- Top navigation -->
+  <header id="nav" class="nav">
+    <!-- Phone: F logo + the name of the page -->
+    <a class="m-brand" href="#/" aria-label="FakeFlix home">
+      <img src="assets/fakeflix-icon.png" alt="">
+      <span id="m-title">Home</span>
+    </a>
 
-    <!-- Only visible in the TV Shows tab -->
-    <div id="tv-controls" class="tv-controls" hidden>
-      <select id="season-select" disabled>
-        <option value="">Season</option>
-      </select>
-      <select id="episode-select" disabled>
-        <option value="">Episode</option>
-      </select>
-      <button id="play-btn" class="play-btn" type="button" disabled>Play</button>
+    <a class="nav-logo" href="#/" aria-label="FakeFlix home">
+      <img src="assets/fakeflix-logo.png" alt="FakeFlix">
+    </a>
+
+    <nav class="nav-links" aria-label="Browse">
+      <a href="#/" data-view="home">Home</a>
+      <a href="#/tv" data-view="tv">TV Shows</a>
+      <a href="#/movies" data-view="movies">Movies</a>
+      <a href="#/new" data-view="new">New &amp; Hot</a>
+      <a href="#/my-list" data-view="my-list">My List</a>
+    </nav>
+
+    <div class="nav-right">
+      <form id="search-form" class="search" role="search" autocomplete="off">
+        <button type="button" id="search-toggle" aria-label="Search">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <input id="search-input" type="text" placeholder="Titles, movies, shows" aria-label="Search titles">
+        <button type="button" id="search-clear" aria-label="Clear search">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </form>
+      <!-- script.js fills in the avatar and the menu -->
+      <div class="profile-wrap">
+        <button type="button" id="profile-btn" class="profile-btn" aria-haspopup="true" aria-expanded="false" aria-label="Profile menu"></button>
+        <div id="profile-menu" class="profile-menu" hidden></div>
+      </div>
     </div>
+
+    <!-- Phone: filter chips under the header (script.js fills them in) -->
+    <div id="chips" class="chips" hidden></div>
   </header>
 
-  <!-- Video player (center) -->
-  <main class="stage">
-    <div class="player">
-      <iframe id="player" allow="autoplay; fullscreen; picture-in-picture"></iframe>
-      <p id="empty" class="empty">Search for something to play</p>
-    </div>
-    <p id="now-playing" class="now-playing"></p>
+  <main id="app">
+    <!-- Billboard -->
+    <section id="hero" class="hero" aria-label="Featured"></section>
+
+    <!-- Carousels -->
+    <div id="rows" class="rows"></div>
+
+    <!-- Search results / My List / Liked / Watch History -->
+    <section id="grid-view" class="grid-view" hidden>
+      <div class="grid-head">
+        <h1 id="grid-title"></h1>
+        <button type="button" id="grid-action" class="ghost-btn" hidden></button>
+      </div>
+      <div id="grid" class="grid"></div>
+      <p id="grid-empty" class="grid-empty" hidden></p>
+    </section>
   </main>
 
-  <script src="script.js"></script>
-</body>
+  <footer class="footer">
+    <img src="assets/fakeflix-logo.png" alt="FakeFlix">
+    <p>This app is intended for personal use only and not for commercial purposes.</p>
+    <p class="footer-credit">Made by Viraj &amp; Claude</p>
+    <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+  </footer>
 
+  <!-- Phone: floating tab bar -->
+  <nav id="tabbar" class="tabbar" aria-label="Main">
+    <a href="#/" data-tab="home">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8.500z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9.500 15.500h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>Home</span>
+    </a>
+    <a href="#/search" data-tab="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="10.500" cy="10.500" r="6.500" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M15.500 15.500 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>Search</span>
+    </a>
+    <a href="#/me" data-tab="me">
+      <span id="tab-avatar"></span>
+      <span>My FakeFlix</span>
+    </a>
+  </nav>
+
+  <!-- Phone: full-screen category picker -->
+  <div id="categories" class="categories" hidden>
+    <div id="categories-list" class="categories-list"></div>
+    <button type="button" id="categories-close" class="categories-close" aria-label="Close categories">
+      <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.500" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Title details -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Title details">
+      <button type="button" id="modal-close" class="modal-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Player -->
+  <div id="watch" class="watch" hidden>
+    <div class="watch-bar">
+      <a id="watch-back" class="watch-back" href="#/" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <path d="M20 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <span id="watch-title" class="watch-title"></span>
+      <a id="watch-next" class="watch-next" href="#/" hidden>Next Episode</a>
+    </div>
+    <!-- script.js mounts <iframe id="player"> in here -->
+    <div id="watch-frame" class="watch-frame"></div>
+  </div>
+
+  <!-- "Who's watching?" (optional profiles) -->
+  <div id="profiles" class="profiles" hidden>
+    <img class="profiles-logo" src="assets/fakeflix-logo.png" alt="FakeFlix">
+    <div id="profiles-body" class="profiles-body"></div>
+  </div>
+
+  <!-- Small message at the bottom of the screen -->
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toast-text"></span>
+    <a id="toast-action" href="#/profiles">Create profile</a>
+  </div>
+
+  <script src="script.js?v=7"></script>
+</body>
 </html>

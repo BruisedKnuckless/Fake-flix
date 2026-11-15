@@ -1,9 +1,9 @@
 @echo off
-title Personal Netflix
+title FakeFlix
 REM Go to the folder this file is in (so the server serves YOUR index.html)
 cd /d "%~dp0"
 
-echo == Personal Netflix ==
+echo == FakeFlix ==
 
 REM ---- 1) Find Python (the only dependency) ----
 set "PY="
@@ -35,11 +35,25 @@ if not errorlevel 1 (set /a PORT+=1 & goto :find_port)
 
 set "URL=http://localhost:%PORT%"
 echo Starting server at %URL%
+
+REM ---- 3) Work out this PC's address on the Wi-Fi, for phones and tablets ----
+REM (This only asks the system which network address it would use. Nothing is sent.)
+set "LAN_IP="
+for /f "usebackq delims=" %%i in (`%PY% -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(('10.255.255.255', 1)); print(s.getsockname()[0])" 2^>nul`) do set "LAN_IP=%%i"
+if defined LAN_IP (
+  echo.
+  echo On a phone or tablet on the same Wi-Fi, open:  http://%LAN_IP%:%PORT%
+  echo If Windows Firewall asks about Python, allow it on private networks.
+  echo Anyone on this Wi-Fi can open that address while this window is running.
+  echo.
+)
 echo Keep this window open. Press Ctrl+C or close the window to stop.
 
-REM ---- 3) Open the browser after 2 seconds, in a separate minimized window ----
+REM ---- 4) Open the browser after 2 seconds, in a separate minimized window ----
 start "" /min cmd /c "timeout /t 2 /nobreak >nul & start %URL%"
 
-REM ---- 4) Start the server (keeps running until you stop it) ----
-%PY% -m http.server %PORT% --bind 127.0.0.1
+REM ---- 5) Start the server (keeps running until you stop it) ----
+REM 0.0.0.0 = reachable from other devices on your network, not just this PC.
+REM Change it back to 127.0.0.1 to keep FakeFlix private to this computer.
+%PY% -m http.server %PORT% --bind 0.0.0.0
 pause

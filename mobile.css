@@ -1,0 +1,612 @@
+/* =========================================================
+   PHONE LAYOUT
+
+   index.html only loads this file on screens up to 760px wide.
+   It turns the site into an app-style layout: a title header
+   with filter chips, a tall poster billboard, and a floating
+   tab bar at the bottom.
+   ========================================================= */
+:root {
+  --nav-h: 52px;
+  --gutter: 16px;
+  --card-w: 29vw;
+  --tab-h: 64px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  /* room for the floating tab bar */
+  padding-bottom: calc(var(--tab-h) + 34px + var(--safe-bottom));
+}
+
+/* =========================================================
+   HEADER + CHIPS
+   ========================================================= */
+.nav {
+  height: auto;
+  flex-wrap: wrap;
+  gap: 0 12px;
+  padding: calc(var(--safe-top) + 6px) var(--gutter) 0;
+  background-image: none;
+  transition: background-color 0.25s;
+}
+
+.nav.solid {
+  background-color: rgba(18, 18, 18, 0.78);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+
+.nav-logo,
+.nav-links {
+  display: none;
+}
+
+.m-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 46px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.m-brand img {
+  flex: none;
+  height: 30px;
+  width: auto;
+}
+
+.m-brand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-right {
+  gap: 6px;
+}
+
+.profile-btn .caret {
+  display: none;
+}
+
+.profile-btn .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+}
+
+.profile-menu {
+  top: calc(100% + 8px);
+}
+
+/* Search lives in its own tab: the field only shows there, full width */
+.search {
+  display: none;
+}
+
+body[data-view="search"] .m-brand {
+  display: none;
+}
+
+body[data-view="search"] .nav {
+  padding-bottom: 10px;
+}
+
+body[data-view="search"] .nav-right {
+  flex: 1;
+  margin-left: 0;
+  gap: 10px;
+}
+
+body[data-view="search"] .search {
+  display: flex;
+  flex: 1;
+  height: 42px;
+  border: 0;
+  border-radius: 8px;
+  background: #2b2b2b;
+  color: var(--muted);
+}
+
+body[data-view="search"] .search input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  opacity: 1;
+  font-size: 16px;               /* below 16px, iOS zooms the page on focus */
+}
+
+.chips {
+  display: flex;
+  flex: 0 0 100%;
+  gap: clamp(5px, 1.6vw, 8px);
+  max-height: 60px;
+  padding: 8px 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* tucked away while scrolling down */
+.nav.chips-away .chips {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 6px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.13);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  font-size: clamp(13px, 3.6vw, 14.5px);
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Home has four chips: they share the full width of the screen */
+body[data-view="home"] .chip {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: 0 8px;
+}
+
+.chip:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.chip.active {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.chip-close {
+  width: 38px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* =========================================================
+   BILLBOARD: a tall poster card
+   ========================================================= */
+.hero {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  padding: calc(var(--safe-top) + 122px) 0 20px;
+  /* --ambient is a colour sampled from the poster */
+  background: linear-gradient(180deg, var(--ambient, #2a2a2a) 0%, var(--bg) 96%);
+  transition: background 0.4s;
+}
+
+.hero.loading {
+  min-height: 78vh;
+}
+
+.hero-card {
+  position: relative;
+  inset: auto;
+  width: calc(100% - 44px);
+  max-width: 430px;
+  margin: 0 auto;
+  aspect-ratio: 7 / 10;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #111;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+
+.hero-img {
+  object-position: center top;
+}
+
+.hero-shade {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.6) 24%, transparent 50%);
+}
+
+.hero-body {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  padding: 0 14px 14px;
+  text-align: center;
+}
+
+.hero-kicker {
+  justify-content: center;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.hero-kicker img {
+  height: 16px;
+}
+
+.hero-body h1 {
+  font-size: clamp(26px, 9vw, 40px);
+}
+
+.hero-logo {
+  max-height: 92px;
+  margin: 0 auto;
+  object-position: center bottom;
+}
+
+.hero-body .hero-overview {
+  display: none;
+}
+
+.hero-body .hero-genres {
+  display: block;
+  margin-top: 8px;
+  font-size: 14.5px;
+}
+
+.hero-actions {
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hero-actions .btn {
+  flex: 1;
+  justify-content: center;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 16px;
+}
+
+.hero-actions .btn:active {
+  transform: scale(0.97);
+}
+
+.hero-info {
+  display: none;
+}
+
+.hero-list {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(120, 120, 120, 0.42);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* =========================================================
+   ROWS + CARDS
+   ========================================================= */
+.rows.overlap {
+  margin-top: 0;
+}
+
+.rows.no-hero {
+  padding-top: calc(var(--safe-top) + 76px);
+}
+
+.row {
+  margin-bottom: 8px;
+}
+
+.row h2 {
+  font-size: 19px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.row-track {
+  gap: 8px;
+  padding: 10px var(--gutter) 14px;
+}
+
+.row-arrow {
+  display: none;
+}
+
+.card-art {
+  border-radius: 6px;
+}
+
+/* no hover on a touch screen: cards press in instead of growing */
+.card:hover,
+.card:focus-visible {
+  transform: none;
+}
+
+.card:active {
+  transform: scale(0.97);
+}
+
+.card-info {
+  display: none;
+}
+
+.card-remove {
+  opacity: 1;
+}
+
+/* =========================================================
+   GRID PAGES
+   ========================================================= */
+.grid-view {
+  min-height: 70vh;
+  padding: calc(var(--safe-top) + 76px) var(--gutter) 30px;
+}
+
+/* category pages have the chips row above them */
+body[data-view="genre"] .grid-view {
+  padding-top: calc(var(--safe-top) + 126px);
+}
+
+/* the header already names the page (search keeps its own heading) */
+body:not([data-view="search"]) .grid-head h1 {
+  display: none;
+}
+
+.grid-head {
+  margin-bottom: 12px;
+  justify-content: flex-end;
+}
+
+body[data-view="search"] .grid-head {
+  justify-content: flex-start;
+}
+
+.grid-view h1 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 8px;
+}
+
+.top-row {
+  grid-template-columns: 132px minmax(0, 1fr) 44px;
+  gap: 12px;
+}
+
+/* =========================================================
+   TAB BAR
+   ========================================================= */
+.tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + var(--safe-bottom));
+  z-index: 40;
+  transform: translateX(-50%);
+  display: flex;
+  width: min(calc(100% - 64px), 380px);
+  height: var(--tab-h);
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 34px;
+  background: rgba(40, 40, 40, 0.74);
+  -webkit-backdrop-filter: blur(26px) saturate(1.5);
+  backdrop-filter: blur(26px) saturate(1.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.tabbar a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #8f8f8f;
+  transition: color 0.15s;
+}
+
+.tabbar a.active {
+  color: #fff;
+}
+
+.tabbar svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tabbar .avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+}
+
+.tabbar a.active .avatar {
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.toast {
+  bottom: calc(var(--tab-h) + 30px + var(--safe-bottom));
+  width: calc(100% - 32px);
+  justify-content: space-between;
+}
+
+.footer {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+/* =========================================================
+   TITLE PAGE: a full-screen sheet that slides up
+   ========================================================= */
+.modal {
+  padding: 0;
+  background: var(--surface);
+}
+
+.modal-card {
+  min-height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  animation: sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(7%); }
+  to   { opacity: 1; transform: none; }
+}
+
+.modal-close {
+  top: calc(var(--safe-top) + 10px);
+  right: 10px;
+  background: rgba(24, 24, 24, 0.82);
+}
+
+.modal-hero {
+  aspect-ratio: auto;
+  max-height: none;
+  background: transparent;
+}
+
+.modal-hero.loading {
+  aspect-ratio: 16 / 9;
+}
+
+.modal-hero > img {
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.modal-hero::after {
+  display: none;
+}
+
+.modal-head {
+  position: static;
+  padding: 14px var(--gutter) 0;
+}
+
+.modal-head h2 {
+  max-width: 100%;
+  font-size: 24px;
+  text-shadow: none;
+}
+
+.modal-actions {
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  margin-top: 14px;
+}
+
+.modal-actions .btn-play {
+  flex: 0 0 100%;
+  justify-content: center;
+  height: 44px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+/* the round buttons become an icon with a label under it */
+.icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.icon-btn svg {
+  width: 26px;
+  height: 26px;
+}
+
+.icon-btn .label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.modal-body {
+  padding: 6px var(--gutter) 40px;
+}
+
+.modal-info {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.section-head {
+  margin-top: 26px;
+}
+
+.section-head h3 {
+  font-size: 19px;
+}
+
+.episode {
+  grid-template-columns: 20px 112px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px 4px;
+}
+
+.episode-num {
+  font-size: 16px;
+}
+
+.episode-top {
+  font-size: 14px;
+}
+
+.episode-text p {
+  -webkit-line-clamp: 2;
+}
+
+.more-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* =========================================================
+   PLAYER + PROFILES
+   ========================================================= */
+.watch-bar {
+  height: calc(48px + var(--safe-top));
+  padding-top: var(--safe-top);
+}
+
+.profiles-logo {
+  margin-top: calc(var(--safe-top) + 16px);
+}
+
+.profile-form {
+  flex-direction: column;
+  align-items: center;
+}
