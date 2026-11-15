@@ -40,6 +40,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   // both come back on any touch, like a video app's controls.
   bool _controls = true;
   Timer? _hideTimer;
+  Timer? _coverTimer; // lifts the loading cover if the page never says it is ready
 
   bool get _isShow => widget.item.type == MediaType.tv;
   int get _season => widget.season ?? 1;
@@ -63,15 +64,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     if (_isShow) _findNextEpisode();
     _showControls();
+    _startCoverTimer();
   }
 
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _coverTimer?.cancel();
     // Back to an upright app with its status bar
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
+  }
+
+  /// The page is on screen (or has had long enough): take the cover away.
+  void _pageReady() {
+    _coverTimer?.cancel();
+    if (mounted && _loading) setState(() => _loading = false);
+  }
+
+  /// Safety net: never leave the cover up for more than a few seconds.
+  void _startCoverTimer() {
+    _coverTimer?.cancel();
+    _coverTimer = Timer(const Duration(seconds: 6), _pageReady);
   }
 
   void _showControls() {
@@ -97,6 +112,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _loading = true;
       _failed = false;
     });
+    _startCoverTimer();
     _web?.loadUrl(urlRequest: URLRequest(url: WebUri(_url)));
   }
 
@@ -139,9 +155,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
       },
       // Android only (see "Layer 1" below): check each request as it is made
       shouldInterceptRequest: _onAndroid ? (_, request) async => _blockedOrNull(request) : null,
-      onLoadStop: (_, _) {
-        if (mounted) setState(() => _loading = false);
+      // Lift the loading cover as soon as the page starts drawing. Waiting
+      // for the page to report "finished" is not safe: for some titles the
+      // player keeps a request open for good, so that moment never comes.
+      onPageCommitVisible: (_, _) => _pageReady(),
+      onProgressChanged: (_, progress) {
+        if (progress >= 70) _pageReady();
       },
+      onLoadStop: (_, _) => _pageReady(),
       onReceivedError: (_, request, _) {
         if (mounted && (request.isForMainFrame ?? false)) {
           setState(() {
